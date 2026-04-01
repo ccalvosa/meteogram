@@ -1,0 +1,8 @@
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+xarray>=2025.1.2
+zarr>=3.0.8
+fsspec>=2024.3.1
+aiohttp>=3.9.0       # fsspec async backend para zarr remoto
+numpy>=1.26.0
+pandas>=2.2.0
