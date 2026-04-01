@@ -127,36 +127,38 @@ def _get_gefs(lat: float, lon: float) -> dict:
     ds = _open_gefs()
     latest_init = pd.Timestamp(ds.init_time.values[-1])
 
+    # Filtramos lead_time a MAX_LEAD_HOURS directamente en xarray antes de compute()
+    max_lead = pd.Timedelta(hours=MAX_LEAD_HOURS)
+    lead_mask = ds.lead_time <= max_lead
+
     point = ds[VARS_GEFS].sel(
         init_time=latest_init,
         latitude=lat,
         longitude=lon,
         method="nearest",
-    ).compute()
+    ).isel(lead_time=lead_mask).compute()
+
+    # Transponemos a (lead_time, ensemble_member) para consistencia con ECMWF
+    point = point.transpose("lead_time", "ensemble_member")
 
     real_lat = float(point.latitude)
     real_lon = float(point.longitude)
     lead_times = point.lead_time.values
-
-    # Recortar a MAX_LEAD_HOURS (GEFS llega a 35 días, igualamos a 15)
-    mask = np.array([pd.Timedelta(lt).total_seconds() / 3600 <= MAX_LEAD_HOURS
-                     for lt in lead_times])
-    lead_times = lead_times[mask]
     valid_times = _valid_times(latest_init, lead_times)
     members = point.ensemble_member.values
     n_members = len(members)
 
     # Temperatura
-    t2m = point["temperature_2m"].values[mask]
+    t2m = point["temperature_2m"].values  # (n_lead, n_member)
     temperature = {"valid_time": valid_times, "members": _members_dict(t2m, members), "units": "°C"}
 
     # Precipitación
-    pcp = _precip_mmh(point["precipitation_surface"].values[mask])
+    pcp = _precip_mmh(point["precipitation_surface"].values)
     precipitation = {"valid_time": valid_times, "members": _members_dict(pcp, members), "units": "mm/h"}
 
     # Viento: GEFS no tiene racha → calculamos módulo del viento medio
-    u = point["wind_u_10m"].values[mask]
-    v = point["wind_v_10m"].values[mask]
+    u = point["wind_u_10m"].values
+    v = point["wind_v_10m"].values
     wspd = np.sqrt(u**2 + v**2) * 3.6  # m/s → km/h
     wind = {
         "valid_time": valid_times,
