@@ -3,12 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from data import get_meteogram_data
 import uvicorn
 
-app = FastAPI(title="Meteograma API", version="1.0.0")
+app = FastAPI(title="Meteograma API", version="2.0.0")
 
-# CORS: permite peticiones desde el frontend (GitHub Pages, Netlify, localhost)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción, cambiar por la URL real del frontend
+    allow_origins=["*"],
     allow_methods=["GET"],
     allow_headers=["*"],
 )
@@ -16,20 +15,20 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"status": "ok", "message": "Meteograma API operativa"}
+    return {"status": "ok", "message": "Meteograma API operativa", "models": ["ecmwf", "gefs"]}
 
 
 @app.get("/meteogram")
 def meteogram(
     lat: float = Query(..., ge=-90, le=90, description="Latitud en grados"),
     lon: float = Query(..., ge=-180, le=180, description="Longitud en grados"),
+    model: str = Query("ecmwf", pattern="^(ecmwf|gefs)$", description="Modelo: ecmwf o gefs"),
 ):
     """
-    Devuelve los datos de meteograma para un punto (lat, lon).
-    Extrae la última pasada disponible del ECMWF IFS ENS.
+    Devuelve los datos de meteograma para un punto (lat, lon) y modelo elegido.
     """
     try:
-        data = get_meteogram_data(lat, lon)
+        data = get_meteogram_data(lat, lon, model)
         return data
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

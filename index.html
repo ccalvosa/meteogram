@@ -5,19 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ENS Meteogram</title>
 
-  <!-- Leaflet -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-
-  <!-- Plotly -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.32.0/plotly.min.js"></script>
-
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
   <style>
-    /* ─── Variables ─────────────────────────────────────────── */
     :root {
       --bg:        #0b0f1a;
       --surface:   #111827;
@@ -35,11 +29,10 @@
       --map-h:     42vh;
     }
 
-    /* ─── Reset & Base ──────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--sans); }
 
-    /* ─── Header ────────────────────────────────────────────── */
+    /* ─── Header ── */
     header {
       height: var(--header-h);
       display: flex;
@@ -50,6 +43,7 @@
       border-bottom: 1px solid var(--border);
       position: relative;
       z-index: 1000;
+      gap: 16px;
     }
     .logo {
       font-family: var(--mono);
@@ -58,8 +52,47 @@
       color: var(--accent);
       letter-spacing: 0.15em;
       text-transform: uppercase;
+      white-space: nowrap;
     }
     .logo span { color: var(--muted); font-weight: 400; }
+
+    /* Toggle modelo */
+    .model-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .model-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      text-transform: uppercase;
+    }
+    .model-btn:hover { background: var(--border); color: var(--text); }
+    .model-btn.active {
+      background: var(--accent);
+      color: #0b0f1a;
+    }
+    .model-btn.active.gefs {
+      background: var(--accent3);
+    }
+    .model-divider {
+      width: 1px;
+      height: 100%;
+      background: var(--border);
+    }
+
     #status {
       font-family: var(--mono);
       font-size: 11px;
@@ -67,12 +100,14 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      white-space: nowrap;
     }
     #status-dot {
       width: 7px; height: 7px;
       border-radius: 50%;
       background: var(--muted);
       transition: background 0.4s;
+      flex-shrink: 0;
     }
     #status-dot.loading { background: var(--accent); animation: pulse 1s infinite; }
     #status-dot.ok      { background: var(--accent3); }
@@ -86,16 +121,13 @@
       padding: 3px 8px;
       border: 1px solid var(--border);
       border-radius: 4px;
+      white-space: nowrap;
     }
 
-    /* ─── Layout ─────────────────────────────────────────────── */
-    #app {
-      display: flex;
-      flex-direction: column;
-      height: calc(100vh - var(--header-h));
-    }
+    /* ─── Layout ── */
+    #app { display: flex; flex-direction: column; height: calc(100vh - var(--header-h)); }
 
-    /* ─── Mapa ───────────────────────────────────────────────── */
+    /* ─── Mapa ── */
     #map-container {
       position: relative;
       height: var(--map-h);
@@ -139,31 +171,14 @@
       backdrop-filter: blur(4px);
     }
 
-    /* Leaflet dark tiles override */
     .leaflet-tile { filter: brightness(0.7) saturate(0.4); }
-    .leaflet-control-zoom a {
-      background: var(--surface) !important;
-      color: var(--text) !important;
-      border-color: var(--border) !important;
-    }
+    .leaflet-control-zoom a { background: var(--surface) !important; color: var(--text) !important; border-color: var(--border) !important; }
     .leaflet-control-zoom a:hover { background: var(--border) !important; }
-    .leaflet-control-attribution {
-      background: rgba(11,15,26,0.7) !important;
-      color: var(--muted) !important;
-      font-size: 9px !important;
-    }
+    .leaflet-control-attribution { background: rgba(11,15,26,0.7) !important; color: var(--muted) !important; font-size: 9px !important; }
     .leaflet-control-attribution a { color: var(--muted) !important; }
+    .ens-marker { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 10px var(--accent); }
 
-    /* Marker */
-    .ens-marker {
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      background: var(--accent);
-      border: 2px solid #fff;
-      box-shadow: 0 0 10px var(--accent);
-    }
-
-    /* ─── Panel de plots ──────────────────────────────────────── */
+    /* ─── Panel plots ── */
     #plots-panel {
       flex: 1;
       overflow-y: auto;
@@ -175,7 +190,6 @@
     #plots-panel::-webkit-scrollbar-track { background: var(--bg); }
     #plots-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-    /* Estado vacío */
     #empty-state {
       flex: 1;
       display: flex;
@@ -188,18 +202,10 @@
     #empty-state .icon { font-size: 36px; opacity: 0.4; }
     #empty-state p { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; }
 
-    /* Contenedor de los 3 plots */
-    #plots-grid {
-      display: none;
-      flex-direction: column;
-      gap: 0;
-    }
+    #plots-grid { display: none; flex-direction: column; gap: 0; }
     #plots-grid.visible { display: flex; }
 
-    .plot-block {
-      border-bottom: 1px solid var(--border);
-      padding: 4px 0 0 0;
-    }
+    .plot-block { border-bottom: 1px solid var(--border); padding: 4px 0 0 0; }
     .plot-block:last-child { border-bottom: none; }
 
     .plot-label {
@@ -213,15 +219,10 @@
       align-items: center;
       gap: 8px;
     }
-    .plot-label::before {
-      content: '';
-      display: inline-block;
-      width: 3px; height: 12px;
-      border-radius: 2px;
-    }
+    .plot-label::before { content: ''; display: inline-block; width: 3px; height: 12px; border-radius: 2px; }
     .plot-label.t2m::before  { background: var(--accent2); }
     .plot-label.pcp::before  { background: var(--accent); }
-    .plot-label.gust::before { background: var(--accent3); }
+    .plot-label.wind::before { background: var(--accent3); }
 
     .plot-div { width: 100%; height: 220px; }
   </style>
@@ -229,7 +230,14 @@
 
 <body>
   <header>
-    <div class="logo">ENS <span>//</span> Meteogram <span>// ECMWF IFS</span></div>
+    <div class="logo">ENS <span>//</span> Meteogram</div>
+
+    <div class="model-toggle">
+      <button class="model-btn active" id="btn-ecmwf" onclick="selectModel('ecmwf')">ECMWF IFS</button>
+      <div class="model-divider"></div>
+      <button class="model-btn" id="btn-gefs" onclick="selectModel('gefs')">NOAA GEFS</button>
+    </div>
+
     <div id="init-time">—</div>
     <div id="status">
       <div id="status-dot"></div>
@@ -241,7 +249,7 @@
     <div id="map-container">
       <div id="map"></div>
       <div id="map-hint">haz clic en cualquier punto del mapa</div>
-      <div id="coords-badge" id="coords-badge">—</div>
+      <div id="coords-badge">—</div>
     </div>
 
     <div id="plots-panel">
@@ -251,16 +259,16 @@
       </div>
       <div id="plots-grid">
         <div class="plot-block">
-          <div class="plot-label t2m">temperatura 2m · °C · 51 miembros</div>
+          <div class="plot-label t2m" id="label-t2m">temperatura 2m · °C · — miembros</div>
           <div class="plot-div" id="plot-t2m"></div>
         </div>
         <div class="plot-block">
-          <div class="plot-label pcp">precipitación · prob. miembros superan umbral</div>
+          <div class="plot-label pcp" id="label-pcp">precipitación · mm/h · — miembros</div>
           <div class="plot-div" id="plot-pcp"></div>
         </div>
         <div class="plot-block">
-          <div class="plot-label gust">racha máx. viento 10m · km/h · 51 miembros</div>
-          <div class="plot-div" id="plot-gust"></div>
+          <div class="plot-label wind" id="label-wind">viento 10m · km/h · — miembros</div>
+          <div class="plot-div" id="plot-wind"></div>
         </div>
       </div>
     </div>
@@ -270,95 +278,81 @@
   // ─── Config ──────────────────────────────────────────────────
   const API_BASE = "https://meteogram.onrender.com";
 
-  // ─── Paleta Plotly (tema oscuro) ─────────────────────────────
-  const BG       = "#0b0f1a";
-  const SURFACE  = "#111827";
-  const BORDER   = "#1e2d45";
-  const MUTED    = "#4b6080";
-  const TEXT     = "#cbd5e1";
-  const ACCENT   = "#38bdf8";
-  const ACCENT2  = "#f472b6";
-  const ACCENT3  = "#34d399";
+  // ─── Estado ──────────────────────────────────────────────────
+  let currentModel = "ecmwf";
+  let currentLat = null;
+  let currentLon = null;
+
+  // ─── Paleta ──────────────────────────────────────────────────
+  const BG      = "#0b0f1a";
+  const SURFACE = "#111827";
+  const BORDER  = "#1e2d45";
+  const TEXT    = "#cbd5e1";
+  const ACCENT  = "#38bdf8";
+  const ACCENT2 = "#f472b6";
+  const ACCENT3 = "#34d399";
 
   const BASE_LAYOUT = {
-    paper_bgcolor: BG,
-    plot_bgcolor:  BG,
+    paper_bgcolor: BG, plot_bgcolor: BG,
     font: { family: "'Space Mono', monospace", color: TEXT, size: 10 },
     margin: { t: 8, r: 20, b: 36, l: 52 },
-    xaxis: {
-      gridcolor: BORDER, zerolinecolor: BORDER,
-      tickfont: { size: 9 }, showgrid: true,
-    },
-    yaxis: {
-      gridcolor: BORDER, zerolinecolor: BORDER,
-      tickfont: { size: 9 }, showgrid: true,
-    },
+    xaxis: { gridcolor: BORDER, zerolinecolor: BORDER, tickfont: { size: 9 }, showgrid: true },
+    yaxis: { gridcolor: BORDER, zerolinecolor: BORDER, tickfont: { size: 9 }, showgrid: true },
     showlegend: true,
-    legend: {
-      bgcolor: "rgba(17,24,39,0.8)",
-      bordercolor: BORDER, borderwidth: 1,
-      font: { size: 9 }, orientation: "h",
-      x: 0, y: -0.22,
-    },
+    legend: { bgcolor: "rgba(17,24,39,0.8)", bordercolor: BORDER, borderwidth: 1, font: { size: 9 }, orientation: "h", x: 0, y: -0.22 },
     hovermode: "x unified",
-    hoverlabel: {
-      bgcolor: SURFACE, bordercolor: BORDER,
-      font: { family: "'Space Mono', monospace", size: 10 },
-    },
+    hoverlabel: { bgcolor: SURFACE, bordercolor: BORDER, font: { family: "'Space Mono', monospace", size: 10 } },
   };
 
-  const PLOTLY_CONFIG = {
-    displayModeBar: false,
-    responsive: true,
-  };
+  const PLOTLY_CONFIG = { displayModeBar: false, responsive: true };
 
-  // ─── Mapa ─────────────────────────────────────────────────────
-  const map = L.map("map", { zoomControl: true, attributionControl: true })
-    .setView([40.4, -3.7], 5);
-
+  // ─── Mapa ────────────────────────────────────────────────────
+  const map = L.map("map", { zoomControl: true }).setView([40.4, -3.7], 5);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "© OpenStreetMap contributors",
-    maxZoom: 18,
+    attribution: "© OpenStreetMap contributors", maxZoom: 18,
   }).addTo(map);
 
   let marker = null;
-
   const markerIcon = L.divIcon({
-    className: "",
-    html: '<div class="ens-marker"></div>',
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
+    className: "", html: '<div class="ens-marker"></div>', iconSize: [14, 14], iconAnchor: [7, 7],
   });
 
   map.on("click", (e) => {
     const { lat, lng } = e.latlng;
+    currentLat = lat;
+    currentLon = lng;
     if (marker) marker.setLatLng([lat, lng]);
     else marker = L.marker([lat, lng], { icon: markerIcon }).addTo(map);
-
     document.getElementById("map-hint").classList.add("hidden");
     const badge = document.getElementById("coords-badge");
     badge.style.display = "block";
     badge.textContent = `${lat.toFixed(2)}°N  ${lng.toFixed(2)}°E`;
-
     fetchMeteogram(lat, lng);
   });
 
-  // ─── Estado UI ────────────────────────────────────────────────
+  // ─── Selector de modelo ──────────────────────────────────────
+  function selectModel(model) {
+    currentModel = model;
+    document.getElementById("btn-ecmwf").className = "model-btn" + (model === "ecmwf" ? " active" : "");
+    document.getElementById("btn-gefs").className  = "model-btn" + (model === "gefs"  ? " active gefs" : "");
+    if (currentLat !== null) fetchMeteogram(currentLat, currentLon);
+  }
+
+  // ─── Estado UI ───────────────────────────────────────────────
   function setStatus(state, text) {
-    const dot = document.getElementById("status-dot");
-    dot.className = state;
+    document.getElementById("status-dot").className = state;
     document.getElementById("status-text").textContent = text;
   }
 
-  // ─── Fetch ────────────────────────────────────────────────────
+  // ─── Fetch ───────────────────────────────────────────────────
   async function fetchMeteogram(lat, lon) {
     setStatus("loading", "descargando datos...");
     try {
-      const res = await fetch(`${API_BASE}/meteogram?lat=${lat}&lon=${lon}`);
+      const res = await fetch(`${API_BASE}/meteogram?lat=${lat}&lon=${lon}&model=${currentModel}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       renderAll(data);
-      setStatus("ok", `${data.metadata.n_members} miembros · ${data.metadata.n_lead_times} pasos`);
+      setStatus("ok", `${data.metadata.model} · ${data.metadata.n_members} miembros · ${data.metadata.n_lead_times} pasos`);
       document.getElementById("init-time").textContent =
         `INIT: ${data.metadata.init_time.replace("T", " ").slice(0, 16)} UTC`;
     } catch (err) {
@@ -366,146 +360,75 @@
     }
   }
 
-  // ─── Render ───────────────────────────────────────────────────
+  // ─── Render ──────────────────────────────────────────────────
   function renderAll(data) {
     document.getElementById("empty-state").style.display = "none";
-    const grid = document.getElementById("plots-grid");
-    grid.classList.add("visible");
+    document.getElementById("plots-grid").classList.add("visible");
 
-    renderT2m(data.temperature_2m);
-    renderPcp(data.precipitation);
-    renderGust(data.wind_gust_10m);
+    const n = data.metadata.n_members;
+    document.getElementById("label-t2m").textContent  = `temperatura 2m · °C · ${n} miembros`;
+    document.getElementById("label-pcp").textContent  = `precipitación · mm/h · ${n} miembros`;
+    document.getElementById("label-wind").textContent = `${data.wind_10m.label} · km/h · ${n} miembros`;
+
+    renderSpaghetti("plot-t2m", data.temperature_2m, ACCENT2, "°C");
+    renderSpaghetti("plot-pcp", data.precipitation,  ACCENT,  "mm/h");
+    renderSpaghetti("plot-wind", data.wind_10m,      ACCENT3, "km/h", 50);
   }
 
-  // Helper: convierte valid_time strings a objetos Date para Plotly
-  function parseTimes(times) {
-    return times.map(t => new Date(t));
-  }
-
-  // ─── T2m: espagueti ──────────────────────────────────────────
-  function renderT2m(d) {
-    const times = parseTimes(d.valid_time);
+  // ─── Espagueti genérico ──────────────────────────────────────
+  function renderSpaghetti(divId, d, color, yLabel, refLine) {
+    const times = d.valid_time.map(t => new Date(t));
     const members = Object.entries(d.members);
-    const n = members.length;
 
-    // Línea de control (miembro 0) destacada
-    const traces = members.map(([id, vals], i) => ({
-      x: times,
-      y: vals,
-      type: "scatter",
-      mode: "lines",
-      name: id === "0" ? "Control" : `M${id}`,
-      showlegend: id === "0",
-      line: {
-        color: id === "0" ? ACCENT2 : `rgba(56,189,248,${id === "0" ? 1 : 0.18})`,
-        width: id === "0" ? 1.8 : 1,
-      },
-      hoverinfo: id === "0" ? "x+y+name" : "skip",
-    }));
-
-    // Añadir mediana
-    const vals2d = members.map(([, v]) => v);
-    const median = computeMedian(vals2d, times.length);
-    traces.push({
-      x: times, y: median, type: "scatter", mode: "lines",
-      name: "Mediana",
-      line: { color: "#facc15", width: 2, dash: "dot" },
-      showlegend: true,
-    });
-
-    const layout = {
-      ...BASE_LAYOUT,
-      yaxis: { ...BASE_LAYOUT.yaxis, title: { text: "°C", font: { size: 10 } } },
-    };
-
-    Plotly.react("plot-t2m", traces, layout, PLOTLY_CONFIG);
-  }
-
-  // ─── Precipitación: espagueti por miembro (mm/h) ────────────
-  function renderPcp(d) {
-    const times = parseTimes(d.valid_time);
-    const members = Object.entries(d.members);
+    // Extraer el color RGB para la transparencia
+    const hex = color.replace("#", "");
+    const r = parseInt(hex.slice(0,2),16);
+    const g = parseInt(hex.slice(2,4),16);
+    const b = parseInt(hex.slice(4,6),16);
 
     const traces = members.map(([id, vals]) => ({
-      x: times,
-      y: vals,
-      type: "scatter",
-      mode: "lines",
-      name: id === "0" ? "Control" : `M${id}`,
-      showlegend: id === "0",
-      line: {
-        color: id === "0" ? ACCENT2 : `rgba(56,189,248,${id === "0" ? 1 : 0.18})`,
-        width: id === "0" ? 1.8 : 1,
-      },
-      hoverinfo: id === "0" ? "x+y+name" : "skip",
-    }));
-
-    // Mediana
-    const vals2d = members.map(([, v]) => v);
-    const median = computeMedian(vals2d, times.length);
-    traces.push({
-      x: times, y: median, type: "scatter", mode: "lines",
-      name: "Mediana",
-      line: { color: "#facc15", width: 2, dash: "dot" },
-      showlegend: true,
-    });
-
-    const layout = {
-      ...BASE_LAYOUT,
-      yaxis: { ...BASE_LAYOUT.yaxis, title: { text: "mm/h", font: { size: 10 } } },
-    };
-
-    Plotly.react("plot-pcp", traces, layout, PLOTLY_CONFIG);
-  }
-
-  // ─── Rachas de viento: espagueti ────────────────────────────
-  function renderGust(d) {
-    const times = parseTimes(d.valid_time);
-    const members = Object.entries(d.members);
-
-    const traces = members.map(([id, vals]) => ({
-      x: times,
-      y: vals,
-      type: "scatter",
-      mode: "lines",
-      name: id === "0" ? "Control" : `M${id}`,
-      showlegend: id === "0",
-      line: {
-        color: id === "0" ? ACCENT3 : `rgba(52,211,153,${id === "0" ? 1 : 0.15})`,
-        width: id === "0" ? 1.8 : 1,
-      },
-      hoverinfo: id === "0" ? "x+y+name" : "skip",
-    }));
-
-    // Mediana
-    const vals2d = members.map(([, v]) => v);
-    const median = computeMedian(vals2d, times.length);
-    traces.push({
-      x: times, y: median, type: "scatter", mode: "lines",
-      name: "Mediana",
-      line: { color: "#facc15", width: 2, dash: "dot" },
-      showlegend: true,
-    });
-
-    // Línea umbral Beaufort 7 (50 km/h)
-    traces.push({
-      x: [times[0], times[times.length - 1]],
-      y: [50, 50],
+      x: times, y: vals,
       type: "scatter", mode: "lines",
-      name: "Bf7 (50 km/h)",
-      line: { color: ACCENT2, width: 1, dash: "dash" },
+      name: id === "0" ? "Control" : `M${id}`,
+      showlegend: id === "0",
+      line: {
+        color: id === "0" ? color : `rgba(${r},${g},${b},0.18)`,
+        width: id === "0" ? 1.8 : 1,
+      },
+      hoverinfo: id === "0" ? "x+y+name" : "skip",
+    }));
+
+    // Mediana
+    const vals2d = members.map(([, v]) => v);
+    const median = computeMedian(vals2d, times.length);
+    traces.push({
+      x: times, y: median, type: "scatter", mode: "lines",
+      name: "Mediana",
+      line: { color: "#facc15", width: 2, dash: "dot" },
       showlegend: true,
     });
 
+    // Línea de referencia opcional (ej: Bf7 para viento)
+    if (refLine !== undefined) {
+      traces.push({
+        x: [times[0], times[times.length - 1]],
+        y: [refLine, refLine],
+        type: "scatter", mode: "lines",
+        name: `Bf7 (${refLine} km/h)`,
+        line: { color: ACCENT2, width: 1, dash: "dash" },
+        showlegend: true,
+      });
+    }
+
     const layout = {
       ...BASE_LAYOUT,
-      yaxis: { ...BASE_LAYOUT.yaxis, title: { text: "km/h", font: { size: 10 } } },
+      yaxis: { ...BASE_LAYOUT.yaxis, title: { text: yLabel, font: { size: 10 } } },
     };
 
-    Plotly.react("plot-gust", traces, layout, PLOTLY_CONFIG);
+    Plotly.react(divId, traces, layout, PLOTLY_CONFIG);
   }
 
-  // ─── Helper: mediana píxel a píxel ──────────────────────────
+  // ─── Helper: mediana ─────────────────────────────────────────
   function computeMedian(arrays, nTimes) {
     return Array.from({ length: nTimes }, (_, t) => {
       const vals = arrays.map(a => a[t]).filter(v => v !== null && !isNaN(v));
